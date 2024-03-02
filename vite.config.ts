@@ -23,6 +23,23 @@ export default defineConfig({
     workbox: {
       // defining cached files formats
       globPatterns: ["**\/*.{js,css,html,png}"],
+      runtimeCaching: [{
+        urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'jsdelivr-static-cache',
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200]
+          },
+        }
+      }],
+      cleanupOutdatedCaches: true, // delete old caches
+      skipWaiting: true, // skip waiting phase
+      clientsClaim: true // claim clients immediately
     }
   })
   ],
