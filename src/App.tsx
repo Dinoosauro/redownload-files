@@ -2,21 +2,31 @@ import 'bootstrap/dist/css/bootstrap.css'
 import Header from './Components/Header'
 import Button from './Components/Button'
 import { useState } from 'react'
-import JSZip from 'jszip'
 import Checkbox from './Components/Checkbox'
 interface State {
   files: null | FileList,
-  showZipProgress: number,
-  zipUrl?: string
+}
+declare global {
+  interface Window {
+    streamSaver: {
+      createWriteStream: (name: string, options?: {
+        size: number
+      }) => WritableStream,
+      WritableStream: WritableStream,
+      supported: boolean,
+      mitm: string
+    },
+    ZIP: any
+  }
 }
 let selectFolder = false;
-let revokeZipUrl = false;
 function changeTheme() {
   document.body.setAttribute("data-bs-theme", document.body.getAttribute("data-bs-theme") === "dark" ? "light" : "dark");
   localStorage.setItem("RedownloadFiles-Theme", document.body.getAttribute("data-bs-theme") !== "dark" ? "a" : "b");
 }
+window.streamSaver.mitm = "./streamSaver/mitm.html";
 export default function App() {
-  let [files, getFiles] = useState<State>({ files: null, showZipProgress: -1 });
+  let [files, getFiles] = useState<State>({ files: null });
   console.log(files);
   return <>
     <Header></Header><br></br>
@@ -31,29 +41,23 @@ export default function App() {
         };
         input.click();
       }}>Select files</Button><span style={{ width: "10px", display: "inline-block" }}></span><Button type='secondary' click={changeTheme}>Change theme</Button><br></br><br></br>
-      <Checkbox change={(e) => { selectFolder = e }}>Select a folder</Checkbox>
+      <Checkbox isChecked={localStorage.getItem("RedownloadFiles-Folder") === "a"} change={(e) => { selectFolder = e; localStorage.setItem("RedownloadFiles-Folder", e ? "a" : "b") }}>Select a folder</Checkbox><div style={{ height: "10px" }}></div>
+      <Checkbox isChecked={localStorage.getItem("RedownloadFiles-MITM") === "a"} change={(e) => { window.streamSaver.mitm = e ? "https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0" : "./streamSaver/mitm.html"; localStorage.setItem("RedownloadFiles-MITM", e ? "a" : "b") }}>Use default MITM website for StreamSaver. Enable this if normal downloads fail.</Checkbox>
+
     </> : <>
-      {files.showZipProgress !== -1 && <div style={{ zIndex: 2, backdropFilter: "blur(8px) brightness(50%)", display: "flex", alignItems: "center", justifyContent: "center", width: "100vw", height: "100vh", top: 0, left: 0, position: 'absolute' }}>
-        {files.zipUrl !== undefined ? <>
-          <div style={{ padding: "20px" }}>
-            <h3>Zip file ready!</h3>
-            <a href={files.zipUrl} download={"Redownload-Files.zip"}>Click here to download it.</a><br></br><br></br>
-            <Button click={() => { if (files.zipUrl !== undefined && revokeZipUrl) URL.revokeObjectURL(files.zipUrl); getFiles({ ...files, showZipProgress: -1, zipUrl: undefined }) }}>Close this</Button><br></br>
-            <br></br><br></br><Checkbox change={(e) => { revokeZipUrl = e }}>Revoke object URL (do this only if the download has finished)</Checkbox>
-          </div>
-        </> : files.showZipProgress === -2 ? <label>Creating final zip file...</label> : <label>Adding file {files.showZipProgress} ({files.files[files.showZipProgress].name})</label>}
-      </div>
-      }
       <Button click={async () => {
-        let zip = new JSZip();
-        if (files.files !== null) for (let i = 0; i < files.files.length; i++) {
-          getFiles({ ...files, showZipProgress: i });
-          await zip.file((files.files[i].webkitRelativePath ?? "") !== "" ? files.files[i].webkitRelativePath : files.files[i].name, await files.files[i].arrayBuffer());
-        };
-        getFiles({ ...files, showZipProgress: -2 });
-        let blob = await zip.generateAsync({ type: "blob" })
-        getFiles({ ...files, zipUrl: URL.createObjectURL(blob), showZipProgress: -2 });
+        if (files.files !== null) {
+          const fileStream = window.streamSaver.createWriteStream("Redownload-Files.zip", { size: Array.from(files.files).reduce((a, b) => a + b.size, 0) });
+          const readableZipStream = new window.ZIP({
+            start(ctrl: any) {
+              if (files.files !== null) for (let item of files.files) ctrl.enqueue(item);
+              ctrl.close();
+            },
+          });
+          readableZipStream.pipeTo(fileStream);
+        }
       }}>Export everything as a ZIP file</Button><span style={{ width: "10px", display: "inline-block" }}></span><Button type='secondary' click={changeTheme}>Change theme</Button><br></br><br></br>
+      <br></br>
       <table className="table">
         <thead className="thread">
           <tr>
@@ -66,16 +70,20 @@ export default function App() {
         <tbody>
           {Array.from(files.files).map((f, i) => <tr key={`TableRow-FileList-${i}`}>
             <th scope='row'>{i + 1}</th>
-            <td><a style={{ textDecoration: "underline" }} onClick={async (e) => {
-              if ((e.currentTarget.href ?? "") === "") e.currentTarget.href = URL.createObjectURL(new Blob([await f.arrayBuffer()], { type: f.type }));
+            <td><a style={{ textDecoration: "underline" }} onClick={async () => {
+              if (window.streamSaver !== undefined) {
+
+                const fileStream = window.streamSaver.createWriteStream(f.name, { size: f.size });
+                f.stream().pipeTo(fileStream);
+              }
             }} download={f.name}>{(f.webkitRelativePath ?? "") !== "" ? f.webkitRelativePath : f.name}</a></td>
-            <td>{f.lastModified}</td>
+            <td>{new Date(f.lastModified).toLocaleString()}</td>
             <td>{(f.size / 1024 / 1024).toFixed(2)}</td>
           </tr>)}
         </tbody>
       </table>
     </>
     }<br></br><br></br><br></br>
-    <i>Icon provided by Microsoft's <a href='https://github.com/microsoft/fluentui-system-icons/tree/main?tab=MIT-1-ov-file#readme' target='_blank'>Fluent UI Icons.</a> The usage of the "Export everything as a ZIP File" functionality uses the open-source <a href='https://github.com/Stuk/jszip?tab=License-1-ov-file#readme' target='_blank'>JSZip Library.</a></i>
+    <i>Icon provided by Microsoft's <a href='https://github.com/microsoft/fluentui-system-icons/tree/main?tab=MIT-1-ov-file#readme' target='_blank'>Fluent UI Icons</a>. File downloading is possible thanks to <a href='https://github.com/jimmywarting/StreamSaver.js?tab=MIT-1-ov-file' target='_blank'>StreamSaver.js</a> and the "Export everything as a ZIP file" functionality is possible thanks to <a href='https://github.com/jimmywarting/StreamSaver.js/blob/master/examples/zip-stream.js' target='_blank'>zip-stream</a> library.</i>
   </>
 }
