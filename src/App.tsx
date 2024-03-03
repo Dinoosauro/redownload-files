@@ -19,13 +19,12 @@ declare global {
     ZIP: any
   }
 }
-caches.open("sw-streamsaver-cache").then((cache) => cache.addAll([`${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}streamSaver/mitm.html?version=2.0.0`, `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}streamSaver/sw.js`]))
 let selectFolder = localStorage.getItem("RedownloadFiles-Folder") === "a";
 function changeTheme() {
   document.body.setAttribute("data-bs-theme", document.body.getAttribute("data-bs-theme") === "dark" ? "light" : "dark");
   localStorage.setItem("RedownloadFiles-Theme", document.body.getAttribute("data-bs-theme") !== "dark" ? "a" : "b");
 }
-window.streamSaver.mitm = `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}streamSaver/mitm.html?version=2.0.0`;
+window.streamSaver.mitm = `https://dinoosauro.github.io/StreamSaver.js/mitm.html?version=2.0.0`;
 export default function App() {
   let [files, getFiles] = useState<State>({ files: null });
   console.log(files);
