@@ -25,7 +25,7 @@ self.addEventListener("message", (msg) => {
         msgSend.postMessage({ status: "DownloadReady", newUrl: stream.url }); // Trigger the event for the download of the stream on the main thread
         return;
     }
-    let url = `${file.url}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}${(file.id ?? "") !== "" ? `${file.id}/` : ""}${encodeURIComponent(file.file.name)}`; // Create a fake URL that'll be used to download the file.
+    let url = `${file.url}/${(file.id ?? "") !== "" ? `${file.id}/` : ""}${encodeURIComponent(file.file.name)}`; // Create a fake URL that'll be used to download the file.
     requestRef.findIndex(e => e.url === url) !== -1 ? requestRef[requestRef.findIndex(e => e.url === url)].file = file.file : requestRef.push({ url: url, file: msg.data.file }); // If the URL already exists, just replace the file with the newly-provided. Otherwise, push the new file to the array.
     msgSend.postMessage({ newUrl: url, for: msg.data.file }) // Send to the main thread information about the new link
 })
