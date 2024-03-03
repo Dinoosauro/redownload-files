@@ -18,8 +18,8 @@
     let scope = ''
 
     function registerWorker() {
-        return navigator.serviceWorker.getRegistration('./').then(swReg => {
-            return swReg || navigator.serviceWorker.register('sw.js', { scope: './' })
+        return navigator.serviceWorker.getRegistration(`${window.location.origin.indexOf("github") !== -1 ? "/redownload-files" : ""}/streamSaver/`).then(swReg => {
+            return swReg || navigator.serviceWorker.register('./sw.js', { scope: `${window.location.origin.indexOf("github") !== -1 ? "/redownload-files" : ""}/streamSaver` })
         }).then(swReg => {
             const swRegTmp = swReg.installing || swReg.waiting
             scope = swReg.scope

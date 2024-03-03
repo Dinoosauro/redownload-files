@@ -19,12 +19,13 @@ declare global {
     ZIP: any
   }
 }
-let selectFolder = false;
+caches.open("sw-streamsaver-cache").then((cache) => cache.addAll([`${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "/redownload-files" : ""}/mitm.html?version=2.0.0`, `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "/redownload-files" : ""}/sw.js`]))
+let selectFolder = localStorage.getItem("RedownloadFiles-Folder") === "a";
 function changeTheme() {
   document.body.setAttribute("data-bs-theme", document.body.getAttribute("data-bs-theme") === "dark" ? "light" : "dark");
   localStorage.setItem("RedownloadFiles-Theme", document.body.getAttribute("data-bs-theme") !== "dark" ? "a" : "b");
 }
-window.streamSaver.mitm = "./streamSaver/mitm.html";
+window.streamSaver.mitm = `${window.location.origin}/streamSaver/mitm.html?version=2.0.0`;
 export default function App() {
   let [files, getFiles] = useState<State>({ files: null });
   console.log(files);
@@ -41,9 +42,7 @@ export default function App() {
         };
         input.click();
       }}>Select files</Button><span style={{ width: "10px", display: "inline-block" }}></span><Button type='secondary' click={changeTheme}>Change theme</Button><br></br><br></br>
-      <Checkbox isChecked={localStorage.getItem("RedownloadFiles-Folder") === "a"} change={(e) => { selectFolder = e; localStorage.setItem("RedownloadFiles-Folder", e ? "a" : "b") }}>Select a folder</Checkbox><div style={{ height: "10px" }}></div>
-      <Checkbox isChecked={localStorage.getItem("RedownloadFiles-MITM") === "a"} change={(e) => { window.streamSaver.mitm = e ? "https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0" : "./streamSaver/mitm.html"; localStorage.setItem("RedownloadFiles-MITM", e ? "a" : "b") }}>Use default MITM website for StreamSaver. Enable this if normal downloads fail.</Checkbox>
-
+      <Checkbox isChecked={localStorage.getItem("RedownloadFiles-Folder") === "a"} change={(e) => { selectFolder = e; localStorage.setItem("RedownloadFiles-Folder", e ? "a" : "b") }}>Select a folder</Checkbox>
     </> : <>
       <Button click={async () => {
         if (files.files !== null) {
