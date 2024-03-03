@@ -54,7 +54,7 @@ export default function App() {
           ctrl.close();
         },
       });
-      navigator.serviceWorker.controller?.postMessage({ action: "StreamConversion", stream: readableZipStream, size: files.files.reduce((a, b) => a + b.size, 0), url: `${window.location.origin}/ExportedZip.zip`, name: "ExportedZip.zip" }, [readableZipStream]); // Send to the Service Worker the new ZIP file stream, so that it's possible to create a fake link for downloading it.
+      navigator.serviceWorker.controller?.postMessage({ action: "StreamConversion", stream: readableZipStream, size: files.files.reduce((a, b) => a + b.size, 0), url: `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}ExportedZip.zip`, name: "ExportedZip.zip" }, [readableZipStream]); // Send to the Service Worker the new ZIP file stream, so that it's possible to create a fake link for downloading it.
     }
   }
   return <>
