@@ -24,7 +24,6 @@ function changeTheme() {
   document.body.setAttribute("data-bs-theme", document.body.getAttribute("data-bs-theme") === "dark" ? "light" : "dark");
   localStorage.setItem("RedownloadFiles-Theme", document.body.getAttribute("data-bs-theme") !== "dark" ? "a" : "b");
 }
-caches.open(`workbox-precache-v2-${window.location.origin}/`).then((cache) => { cache.addAll(["https://dinoosauro.github.io/StreamSaver.js/mitm.html?version=2.0.0", "https://dinoosauro.github.io/StreamSaver.js/mitm.html", "https://dinoosauro.github.io/StreamSaver.js/sw.js"]) })
 window.streamSaver.mitm = `https://dinoosauro.github.io/StreamSaver.js/mitm.html?version=2.0.0`;
 export default function App() {
   let [files, getFiles] = useState<State>({ files: null });
