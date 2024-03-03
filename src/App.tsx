@@ -101,7 +101,7 @@ export default function App() {
             <td><a style={{ textDecoration: `underline${f._fileLink === undefined ? " wavy" : ""}` }} onClick={async () => {
               if (navigator.serviceWorker.controller !== null) {
                 f._fileLink === undefined ? navigator.serviceWorker.controller.postMessage({
-                  file: f, url: `${window.location.origin}//${window.location.origin.indexOf("github") !== -1 ? "redownload-files/" : ""}`, id: i
+                  file: f, url: `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files" : ""}`, id: i
                 }) : window.open(f._fileLink);
               }
             }} download={f.name}>{(f.webkitRelativePath ?? "") !== "" ? f.webkitRelativePath : f.name}</a></td>
