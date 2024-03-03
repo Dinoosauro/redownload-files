@@ -17,6 +17,13 @@
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/examples/zip-stream.js"></script>
   <script>
+    if ('serviceWorker' in navigator) {
+      let registration;
+      const registerServiceWorker = async () => {
+        registration = await navigator.serviceWorker.register('./service-worker.js',);
+      };
+      registerServiceWorker();
+    } else console.error(":/")
     if (localStorage.getItem("RedownloadFiles-Theme") === "a") document.body.setAttribute("data-bs-theme", "light");
   </script>
 </body>
