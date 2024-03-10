@@ -12,9 +12,10 @@
 </head>
 
 <body style="padding: 20px;" data-bs-theme="dark">
-  <div id="root"></div>
+  <div id="root"></div><br><br>
+  <i>Version <span id="version">1.0.0</span></i>
   <script type="module" src="/src/main.tsx"></script>
-  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/examples/zip-stream.js"></script>
+  <script src="./zip-stream.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       const registerServiceWorker = async () => {
@@ -23,7 +24,8 @@
       registerServiceWorker();
     } else console.error(":/")
     if (localStorage.getItem("RedownloadFiles-Theme") === "a") document.body.setAttribute("data-bs-theme", "light");
-    let appVersion = "1.0.1"
+    let appVersion = "1.0.2";
+    document.getElementById("version").textContent = appVersion;
     fetch("./updatecode.txt", { cache: "no-store" }).then((res) => res.text().then((text) => { if (text.replace("\n", "") !== appVersion) if (confirm(`There's a new version of redownload-files. Do you want to update? [${appVersion} --> ${text.replace("\n", "")}]`)) { caches.delete("redownloadfiles-cache"); location.reload(true); } }).catch((e) => { console.error(e) })).catch((e) => console.error(e)); // Check if the application code is the same as the current application version and, if not, ask the user to update
   </script>
 </body>
