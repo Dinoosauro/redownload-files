@@ -3,6 +3,7 @@ import Header from './Components/Header'
 import Button from './Components/Button'
 import { useEffect, useState } from 'react'
 import Checkbox from './Components/Checkbox'
+import Input from './Components/Input'
 interface State {
   files: null | File[],
   zipLink?: string
@@ -13,6 +14,7 @@ declare global {
   }
   interface File {
     _fileLink?: string // The fake link URL that'll be used to download the file
+    _removeStr?: string // The final part of the file that needs to be removed
   }
 }
 interface FileUrlObtain { // Syntax of the messages sent to the main thread from the service worker
@@ -22,6 +24,7 @@ interface FileUrlObtain { // Syntax of the messages sent to the main thread from
 }
 let downloadNow = true; // Try to download immediately the ZIP file. Since a closed stream cannot be used for multiple Response, it's necessary to re-create the ZIP file stream if the automatic download fails for some reason. Therefore, if this variable is false, user interaction will be waited before downloading it.
 let selectFolder = localStorage.getItem("RedownloadFiles-Folder") === "a"; // If true, the website will ask to choose a folder, and not multiple files.
+let removeFromFinalFile = ""; // The string that'll contain the value to remove from the final file.
 function changeTheme() {
   document.body.setAttribute("data-bs-theme", document.body.getAttribute("data-bs-theme") === "dark" ? "light" : "dark");
   localStorage.setItem("RedownloadFiles-Theme", document.body.getAttribute("data-bs-theme") !== "dark" ? "a" : "b");
@@ -40,6 +43,7 @@ export default function App() {
         let newFiles = Array.from(files.files);
         if (newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size) !== -1) { // The file exists
           newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._fileLink = data.newUrl; // Add the _fileLink property (the URL where the fake download request will be initialized)
+          newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._removeStr = removeFromFinalFile; // Add the _removeStr property (the current string that must be replaced in the file name)
           window.open(data.newUrl);
           getFiles({ ...files, files: newFiles });
         }
@@ -50,7 +54,7 @@ export default function App() {
     if (files.files !== null) {
       const readableZipStream: ReadableStream = new window.ZIP({ // Create a new ZIP file, using the "zip-stream" example from StreamSaver.JS
         start(ctrl: any) {
-          if (files.files !== null) for (let item of files.files) ctrl.enqueue(item);
+          if (files.files !== null) for (let item of files.files) ctrl.enqueue(item, (item.webkitRelativePath ?? item.name).replaceAll(removeFromFinalFile, ""));
           ctrl.close();
         },
       });
@@ -84,6 +88,7 @@ export default function App() {
           </> : <Button click={() => { window.open(files.zipLink); setTimeout(() => getFiles({ ...files, zipLink: undefined }), 150) }}>Download and close</Button>}
       </div>}
       <Button click={createZipFile}>Export everything as a ZIP file</Button><span style={{ width: "10px", display: "inline-block" }}></span><Button type='secondary' click={changeTheme}>Change theme</Button><br></br><br></br>
+      <Input defaultVal={removeFromFinalFile} hint='Remove from the download name:' update={(e) => removeFromFinalFile = e}></Input>
       <i>The wavy links express the items that aren't loaded by the Service Worker. You might need to click them two times (or always enable popups) to make the download start.</i>
       <br></br>
       <table className="table">
@@ -100,11 +105,11 @@ export default function App() {
             <th scope='row'>{i + 1}</th>
             <td><a style={{ textDecoration: `underline${f._fileLink === undefined ? " wavy" : ""}` }} onClick={async () => {
               if (navigator.serviceWorker.controller !== null) {
-                f._fileLink === undefined ? navigator.serviceWorker.controller.postMessage({
-                  file: f, url: `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files" : ""}`, id: i
+                f._fileLink === undefined || (f._removeStr ?? "") !== removeFromFinalFile ? navigator.serviceWorker.controller.postMessage({
+                  file: f, url: `${window.location.origin}/${window.location.origin.indexOf("github") !== -1 ? "redownload-files" : ""}`, id: i, replace: removeFromFinalFile
                 }) : window.open(f._fileLink);
               }
-            }} download={f.name}>{(f.webkitRelativePath ?? "") !== "" ? f.webkitRelativePath : f.name}</a></td>
+            }} download={f.name.replaceAll(removeFromFinalFile, "")}>{(f.webkitRelativePath ?? "") !== "" ? f.webkitRelativePath : f.name}</a></td>
             <td>{new Date(f.lastModified).toLocaleString()}</td>
             <td>{(f.size / 1024 / 1024).toFixed(2)}</td>
           </tr>)}
