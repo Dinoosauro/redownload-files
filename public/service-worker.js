@@ -15,7 +15,7 @@ self.addEventListener('install', e => {
     );
 });
 let msgSend = new BroadcastChannel("URL");
-let requestRef = [];
+let requestRef = new Map([]);
 let stream = {};
 self.addEventListener("message", (msg) => {
     console.log(msg);
@@ -27,18 +27,15 @@ self.addEventListener("message", (msg) => {
     }
     let newName = msg.data.file.name.replaceAll((msg.data.replace ?? ""), ""); // If the user wants to replace a part of the file name, do it now.
     let url = `${file.url}/${(file.id ?? "") !== "" ? `${file.id}/` : ""}${encodeURIComponent(newName)}`; // Create a fake URL that'll be used to download the file.
-    if (requestRef.findIndex(e => e.url === url) !== -1) {
-        requestRef[requestRef.findIndex(e => e.url === url)].file = file.file;
-        requestRef[requestRef.findIndex(e => e.url === url)].name = newName;
-    } else requestRef.push({ url: url, file: msg.data.file, name: newName }); // If the URL already exists, just replace the file with the newly-provided. Otherwise, push the new file to the array.
+    requestRef.set(url, { file: file.file, name: newName }); // Update the requestRef map with the file and the name
     msgSend.postMessage({ newUrl: url, for: msg.data.file }) // Send to the main thread information about the new link
 })
 self.addEventListener('activate', e => self.clients.claim());
 
 self.addEventListener('fetch', async (event) => {
     const req = event.request;
-    if (requestRef.findIndex(e => e.url === req.url) !== -1 || req.url === stream.url) { // Create a fake response since a file needs to be downloaded
-        let current = req.url === stream.url ? { file: { stream: () => { return stream.stream }, size: stream.size }, name: stream.name } : requestRef.find(e => e.url === req.url); // Create a FileLike object if a stream must be downloaded (only with the essential properties used), otherwise just find the file.
+    if (requestRef.get(req.url) || req.url === stream.url) { // Create a fake response since a file needs to be downloaded
+        let current = req.url === stream.url ? { file: { stream: () => { return stream.stream }, size: stream.size }, name: stream.name } : requestRef.get(req.url); // Create a FileLike object if a stream must be downloaded (only with the essential properties used), otherwise just find the file.
         console.log(current);
         const responseHeaders = new Headers({ // Borrowed from StreamSaver.js.
             'Content-Type': 'application/octet-stream; charset=utf-8',

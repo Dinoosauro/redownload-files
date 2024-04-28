@@ -34,27 +34,33 @@ export default function App() {
   useEffect(() => {
     new BroadcastChannel("URL").onmessage = (msg) => { // Message from the ServiceWorker: ready for downloading a file
       let data: FileUrlObtain = msg.data;
-      if (data.status === "DownloadReady") { // A stream needs to be downloaded, and not a file. This is the case of "Download everything as a ZIP file"
-        if (downloadNow) window.open(data.newUrl);
-        getFiles({ ...files, zipLink: data.newUrl });
-        return;
-      }
-      if (files.files !== null) {
-        let newFiles = Array.from(files.files);
-        if (newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size) !== -1) { // The file exists
-          newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._fileLink = data.newUrl; // Add the _fileLink property (the URL where the fake download request will be initialized)
-          newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._removeStr = removeFromFinalFile; // Add the _removeStr property (the current string that must be replaced in the file name)
-          window.open(data.newUrl);
-          getFiles({ ...files, files: newFiles });
+      getFiles(files => {
+        console.log(data);
+        if (data.status === "DownloadReady") { // A stream needs to be downloaded, and not a file. This is the case of "Download everything as a ZIP file"
+          if (downloadNow) window.open(data.newUrl);
+          return { ...files, zipLink: data.newUrl };
         }
-      }
+        if (files.files !== null) {
+          let newFiles = Array.from(files.files);
+          if (newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size) !== -1) { // The file exists
+            newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._fileLink = data.newUrl; // Add the _fileLink property (the URL where the fake download request will be initialized)
+            newFiles[newFiles.findIndex(e => e.name === data.for.name && e.size === data.for.size)]._removeStr = removeFromFinalFile; // Add the _removeStr property (the current string that must be replaced in the file name)
+            window.open(data.newUrl);
+            return { ...files, files: newFiles };
+          }
+        }
+        return files;
+      })
     }
-  }, [files])
+  }, [])
   function createZipFile() {
     if (files.files !== null) {
       const readableZipStream: ReadableStream = new window.ZIP({ // Create a new ZIP file, using the "zip-stream" example from StreamSaver.JS
         start(ctrl: any) {
-          if (files.files !== null) for (let item of files.files) ctrl.enqueue(item, (item.webkitRelativePath ?? item.name).replaceAll(removeFromFinalFile, ""));
+          if (files.files !== null) for (let item of files.files) {
+            console.log(item);
+            ctrl.enqueue(item, (item.webkitRelativePath && item.webkitRelativePath !== "" ? item.webkitRelativePath : item.name).replaceAll(removeFromFinalFile, ""));
+          }
           ctrl.close();
         },
       });

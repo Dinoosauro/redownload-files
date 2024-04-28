@@ -24,7 +24,7 @@
       registerServiceWorker();
     } else console.error(":/")
     if (localStorage.getItem("RedownloadFiles-Theme") === "a") document.body.setAttribute("data-bs-theme", "light");
-    let appVersion = "1.0.2";
+    let appVersion = "1.0.3";
     document.getElementById("version").textContent = appVersion;
     fetch("./updatecode.txt", { cache: "no-store" }).then((res) => res.text().then((text) => { if (text.replace("\n", "") !== appVersion) if (confirm(`There's a new version of redownload-files. Do you want to update? [${appVersion} --> ${text.replace("\n", "")}]`)) { caches.delete("redownloadfiles-cache"); location.reload(true); } }).catch((e) => { console.error(e) })).catch((e) => console.error(e)); // Check if the application code is the same as the current application version and, if not, ask the user to update
   </script>
